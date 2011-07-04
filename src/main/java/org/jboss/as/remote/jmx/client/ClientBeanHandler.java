@@ -25,8 +25,6 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
-import org.jboss.as.remote.jmx.common.MethodUtil;
-
 /**
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
@@ -47,9 +45,6 @@ abstract class ClientBeanHandler implements InvocationHandler, Serializable {
 
     @Override
     public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        String methodName = method.getName();
-        String[] sig = MethodUtil.getSignature(method);
-
         return doInvoke(proxy, client, name, method, args);
     }
 

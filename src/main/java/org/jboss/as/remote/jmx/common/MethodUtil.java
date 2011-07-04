@@ -22,9 +22,6 @@
 package org.jboss.as.remote.jmx.common;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jboss.as.remote.jmx.mbean.ClassReflectionIndex;
 import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
@@ -35,21 +32,6 @@ import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
  * @version $Revision: 1.1 $
  */
 public class MethodUtil {
-
-    private static final Map<String, Class<?>> PRIMITIVES;
-    static {
-        Map<String, Class<?>> primitives = new HashMap<String, Class<?>>();
-        primitives.put("int", Integer.TYPE);
-        primitives.put("boolean", Boolean.TYPE);
-        primitives.put("byte", Byte.TYPE);
-        primitives.put("short", Short.TYPE);
-        primitives.put("long", Long.TYPE);
-        primitives.put("double", Double.TYPE);
-        primitives.put("float", Float.TYPE);
-        PRIMITIVES = Collections.unmodifiableMap(primitives);
-    }
-
-
     public static String[] getSignature(Method method) {
         Class<?>[] params = method.getParameterTypes();
         String[] sig = new String[params.length];
