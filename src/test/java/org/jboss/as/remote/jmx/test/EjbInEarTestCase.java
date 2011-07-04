@@ -35,6 +35,7 @@ import org.jboss.as.remote.jmx.client.Client;
 import org.jboss.as.remote.jmx.client.ClientFactory;
 import org.jboss.as.remote.jmx.common.MethodUtil;
 import org.jboss.as.remote.jmx.mbean.RemoteEjb;
+import org.jboss.as.remote.jmx.test.ejb.TestStateful;
 import org.jboss.as.remote.jmx.test.ejb.TestStateless;
 import org.jboss.as.remote.jmx.test.ejb.TestStatelessBean;
 import org.jboss.shrinkwrap.api.Archive;
@@ -61,7 +62,6 @@ public class EjbInEarTestCase {
         //EJB jar
         JavaArchive ejb = ShrinkWrap.create(JavaArchive.class, "test-ejb.jar");
         ejb.addPackage(TestStatelessBean.class.getPackage());
-        System.out.println(ejb.toString(true));
 
         //Sar
         JavaArchive sar = ShrinkWrap.create(JavaArchive.class, "test.sar");
@@ -77,28 +77,63 @@ public class EjbInEarTestCase {
         File metaInfDir = new File(file, "META-INF");
         ArchivePath metaInf = ArchivePaths.create(ArchivePaths.create("/"), "META-INF");
         sar.add(new FileAsset(new File(metaInfDir, "jboss-service.xml")), ArchivePaths.create(metaInf, "jboss-service.xml"));
-        System.out.println(sar.toString(true));
 
         //Ear
         EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "test.ear");
         ear.addAsModule(ejb);
         ear.addAsModule(sar);
-        System.out.println(ear.toString(true));
 
         return ear;
     }
 
     @Test
+    public void testNotVisibleBean() throws Exception {
+        Client client = ClientFactory.INSTANCE.getOrCreateClient(new ObjectName("jboss:name=test,type=remote"), "localhost", 1090);
+        try {
+            client.lookup(TestStateless.class, "java:global/test/test-ejb/NotVisibleBean");
+            Assert.fail("Should have had an exception");
+        } catch (Exception ignore) {
+        } finally {
+            client.remove();
+        }
+    }
+
+    @Test
     public void testSimpleStateless() throws Exception {
         Client client = ClientFactory.INSTANCE.getOrCreateClient(new ObjectName("jboss:name=test,type=remote"), "localhost", 1090);
-        TestStateless bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
-        Assert.assertNotNull(bean);
-        Assert.assertEquals(1, bean.test(true));
-        Assert.assertEquals(0, bean.test(false));
+        try {
+            TestStateless bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
+            Assert.assertNotNull(bean);
+            Assert.assertEquals(1, bean.test(true));
+            Assert.assertEquals(0, bean.test(false));
 
-        bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
-        Assert.assertNotNull(bean);
-        Assert.assertEquals(0, bean.test(false));
-        Assert.assertEquals(1, bean.test(true));
+            bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
+            Assert.assertNotNull(bean);
+            Assert.assertEquals(0, bean.test(false));
+            Assert.assertEquals(1, bean.test(true));
+        } finally {
+            client.remove();
+        }
+    }
+
+    @Test
+    public void testSimpleStateful() throws Exception {
+        Client client = ClientFactory.INSTANCE.getOrCreateClient(new ObjectName("jboss:name=test,type=remote"), "localhost", 1090);
+        try {
+            TestStateful bean1 = client.lookup(TestStateful.class, "java:global/test/test-ejb/TestStatefulBean");
+            bean1.setValue(100);
+            Assert.assertEquals(100, bean1.getValue());
+
+            TestStateful bean2 = client.lookup(TestStateful.class, "java:global/test/test-ejb/TestStatefulBean");
+            bean2.setValue(200);
+            Assert.assertEquals(200, bean2.getValue());
+            Assert.assertEquals(100, bean1.getValue());
+
+            bean1.setValue(300);
+            Assert.assertEquals(300, bean1.getValue());
+            Assert.assertEquals(200, bean2.getValue());
+        } finally {
+            client.remove();
+        }
     }
 }

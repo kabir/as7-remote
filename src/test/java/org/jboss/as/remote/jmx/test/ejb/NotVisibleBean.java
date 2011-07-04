@@ -19,24 +19,21 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.as.remote.jmx.client;
+package org.jboss.as.remote.jmx.test.ejb;
 
-import java.lang.reflect.Method;
+import javax.ejb.Stateless;
 
-import org.jboss.as.remote.jmx.common.MethodUtil;
-
-public class StatelessBeanHandler extends ClientBeanHandler {
-    private static final long serialVersionUID = 1L;
-    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String.class.getName(), String[].class.getName(), Object[].class.getName()};
-
-    public StatelessBeanHandler(String name) {
-        super(name);
-    }
+/**
+ *
+ * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
+ * @version $Revision: 1.1 $
+ */
+@Stateless
+public class NotVisibleBean implements TestStateless {
 
     @Override
-    Object doInvoke(Object proxy, Client client, String name, Method method, Object[] args) throws Throwable {
-        String[] sig = MethodUtil.getSignature(method);
-        return client.getConnection().invoke(client.getAppMBeanName(), "invokeStateless", new Object[] {name, method.getDeclaringClass().getName(), method.getName(), sig, args}, INVOKE_SIGNATURE);
+    public int test(boolean b) {
+        return b ? 1 : 0;
     }
 
 }

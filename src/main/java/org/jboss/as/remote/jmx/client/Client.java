@@ -22,7 +22,6 @@
 package org.jboss.as.remote.jmx.client;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
 import javax.management.MBeanServerConnection;
@@ -41,12 +40,14 @@ public class Client {
 
     private static String[] LOOKUP_SIG = new String[] {String.class.getName(), String.class.getName()};
 
+    private final ClientFactory factory;
     private final ObjectName appMBeanName;
     private final String host;
     private final int port;
     private volatile JMXConnector jmxConnector;
 
-    Client(ObjectName appMBeanName, String host, int port) {
+    Client(ClientFactory factory, ObjectName appMBeanName, String host, int port) {
+        this.factory = factory;
         this.appMBeanName = appMBeanName;
         this.host = host;
         this.port = port;
@@ -57,21 +58,30 @@ public class Client {
         try {
             val = getConnection().invoke(appMBeanName, "lookup", new Object[] {clazz.getName(), name}, LOOKUP_SIG);
         } catch (Exception e) {
-            if (e.getCause() instanceof NamingException) {
-                throw (NamingException)e.getCause();
+            if (e.getCause() != null) {
+                if (e.getCause() instanceof NamingException) {
+                    throw (NamingException)e.getCause();
+                }
+                if (e.getCause() instanceof RuntimeException) {
+                    throw (RuntimeException)e.getCause();
+                }
             }
             throw new RuntimeException(e);
         }
-        InvocationHandler handler;
+        ClientBeanHandler handler;
         if (val instanceof StatelessBeanHandler) {
-            StatelessBeanHandler sbh = (StatelessBeanHandler)val;
-            sbh.setClient(this);
-            handler = sbh;
+            handler = (ClientBeanHandler)val;
+        } else if (val instanceof StatefulBeanHandler) {
+            handler = (ClientBeanHandler)val;
         } else {
             throw new RuntimeException("Unknown handler type " + val);
         }
-
+        handler.setClient(this);
         return (T)Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {clazz}, handler);
+    }
+
+    public void remove() {
+        factory.closeClient(appMBeanName);
     }
 
     void safeClose() {

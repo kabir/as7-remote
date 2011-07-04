@@ -30,6 +30,9 @@ import javax.naming.NamingException;
  */
 public interface RemoteEjbMBean {
     void start();
+    void setStatelessBeanNames(String name);
+    void setStatefulBeanNames(String name);
     Object lookup(String className, String name) throws NamingException;
-    Object invokeStateless(String name, String methodName, String[] sig, Object[] args) throws Exception;
+    Object invokeStateless(String name, String declaringClassName, String methodName, String[] sig, Object[] args) throws Exception;
+    Object invokeStateful(String name, String declaringClassName, String methodName, long sessionId, String[] sig, Object[] args) throws Exception;
 }

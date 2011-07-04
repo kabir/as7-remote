@@ -44,7 +44,7 @@ public class ClientFactory {
     public synchronized Client getOrCreateClient(ObjectName appName, String host, int port) {
         Client client = clients.get(appName);
         if (client == null) {
-            client = new Client(appName, host, port);
+            client = new Client(this, appName, host, port);
             clients.put(appName, client);
         }
         return client;
@@ -52,7 +52,7 @@ public class ClientFactory {
 
     synchronized void closeClient(ObjectName appName) {
         Client client = clients.remove(appName);
-        if (client == null) {
+        if (client != null) {
             client.safeClose();
         }
     }

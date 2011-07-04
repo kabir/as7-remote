@@ -25,12 +25,14 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.resource.spi.IllegalStateException;
 
+import org.jboss.as.remote.jmx.client.StatefulBeanHandler;
 import org.jboss.as.remote.jmx.client.StatelessBeanHandler;
 import org.jboss.as.remote.jmx.common.MethodUtil;
 import org.jboss.logging.Logger;
@@ -42,16 +44,79 @@ import org.jboss.logging.Logger;
  */
 public class RemoteEjb implements RemoteEjbMBean {
 
-    Logger log = Logger.getLogger(RemoteEjb.class);
+    private final Logger log = Logger.getLogger(RemoteEjb.class);
 
-    Map<String, Object> statelessBeans = Collections.synchronizedMap(new HashMap<String, Object>());
+    private final Map<String, Object> statelessBeans = Collections.synchronizedMap(new HashMap<String, Object>());
+    private final Map<Long, Object> statefulBeanInstances = Collections.synchronizedMap(new HashMap<Long, Object>());
+
+    private final Set<String> statelessBeanNames = Collections.synchronizedSet(new HashSet<String>());
+    private final Set<String> statefulBeanNames = Collections.synchronizedSet(new HashSet<String>());
 
     public Object lookup(String className, String name) throws NamingException {
-        return lookupStateless(className, name);
+        if (statelessBeanNames.contains(name)) {
+            return lookupStateless(className, name);
+        }
+        if (statefulBeanNames.contains(name)) {
+            return lookupStateful(className, name);
+        }
+        throw new IllegalArgumentException("No registered stateful or stateless beans called '" + name + "'");
+    }
+
+    @Override
+    public Object invokeStateless(String name, String declaringClassName, String methodName, String[] sig, Object[] args) throws Exception {
+        System.out.println("Invoking on bean");
+        Object value = statelessBeans.get(name);
+        if (value == null) {
+            throw new IllegalStateException("No proxy found for: " + name);
+        }
+
+        Method m;
+        try {
+            m = MethodUtil.getMethod(value.getClass(), methodName, sig);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
+        }
+
+        return m.invoke(value, args);
+    }
+
+    @Override
+    public Object invokeStateful(String name, String declaringClassName, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
+        Object value = statefulBeanInstances.get(sessionId);
+        Method m;
+        try {
+            m = MethodUtil.getMethod(value.getClass(), methodName, sig);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
+        }
+
+        return m.invoke(value, args);
+    }
+
+    @Override
+    public void start() {
+        log.info("Starting remote ejb invocation mbean");
+    }
+
+    @Override
+    public void setStatelessBeanNames(String names) {
+        parseNames(statelessBeanNames, names);
+    }
+
+    @Override
+    public void setStatefulBeanNames(String names) {
+        parseNames(statefulBeanNames, names);
+    }
+
+    private void parseNames(Set<String> set, String value){
+        if (value != null && value.trim().length() > 0) {
+            for (String s : value.split(",")) {
+                set.add(s.trim());
+            }
+        }
     }
 
     private Object lookupStateless(String className, String name) throws NamingException {
-        System.out.println("Looking up bean");
         Object value = statelessBeans.get(name);
         if (value != null) {
             return new StatelessBeanHandler(name);
@@ -79,27 +144,38 @@ public class RemoteEjb implements RemoteEjbMBean {
         return new StatelessBeanHandler(name);
     }
 
-    @Override
-    public Object invokeStateless(String name, String methodName, String[] sig, Object[] args) throws Exception {
-        System.out.println("Invoking on bean");
-        Object value = statelessBeans.get(name);
-        if (value == null) {
-            throw new IllegalStateException("No proxy found for: " + name);
-        }
-
-        Method m;
+    private Object lookupStateful(String className, String name) throws NamingException {
+        InitialContext context = new InitialContext();
+        Object value = context.lookup(name);
+        Class<?> clazz;
         try {
-            m = MethodUtil.getMethod(value.getClass(), methodName, sig);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
+            clazz = Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            NamingException ex = new NamingException("Could not find class for " + className + " in loader: "  + e.getMessage());
+            ex.setRootCause(e);
+            throw ex;
         }
+        System.out.println(clazz);
+        System.out.println(value.getClass());
 
-        return m.invoke(value, args);
+        System.out.println(value.getClass().isAssignableFrom(clazz));
+        System.out.println(clazz.isAssignableFrom(value.getClass()));
+
+        if (!clazz.isAssignableFrom(value.getClass())) {
+            throw new NamingException("Expected " + className + " for " + name);
+        }
+        return createStatefulHandler(name, value);
     }
 
-    @Override
-    public void start() {
-        log.info("Starting remote ejb invocation mbean");
+    private synchronized StatefulBeanHandler createStatefulHandler(String name, Object stateful) {
+        long id = (long)(Math.random() * Long.MAX_VALUE);
+        while (true) {
+            if (!statefulBeanInstances.containsKey(id)) {
+                statefulBeanInstances.put(id, stateful);
+                return new StatefulBeanHandler(name, id);
+            }
+            id = (long)(Math.random() * Long.MAX_VALUE);
+        }
     }
 
 }

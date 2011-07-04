@@ -24,5 +24,8 @@
       xsi:schemaLocation="urn:jboss:service:7.0 jboss-service_7_0.xsd">
 
     <mbean name="jboss:name=test,type=remote" code="org.jboss.as.remote.jmx.mbean.RemoteEjb">
+      <!--  A comma separated list of jndi names of stateless session beans -->
+      <attribute name="statelessBeanNames">java:global/test/test-ejb/TestStatelessBean</attribute>
+      <attribute name="statefulBeanNames">java:global/test/test-ejb/TestStatefulBean</attribute>
     </mbean>
 </server>

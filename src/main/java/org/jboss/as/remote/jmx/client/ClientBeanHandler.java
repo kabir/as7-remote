@@ -23,6 +23,9 @@ package org.jboss.as.remote.jmx.client;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+import org.jboss.as.remote.jmx.common.MethodUtil;
 
 /**
  *
@@ -38,19 +41,18 @@ abstract class ClientBeanHandler implements InvocationHandler, Serializable {
         this.name = name;
     }
 
-    Client getClient() {
-        return client;
-    }
-
     void setClient(Client client) {
         this.client = client;
     }
 
-    String getName() {
-        return name;
+    @Override
+    public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        String methodName = method.getName();
+        String[] sig = MethodUtil.getSignature(method);
+
+        return doInvoke(proxy, client, name, method, args);
     }
 
-
-
+    abstract Object doInvoke(Object proxy, Client client, String name, Method method, Object[] args) throws Throwable;
 
 }
