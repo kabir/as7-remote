@@ -138,7 +138,6 @@ public class EjbInEarTestCase {
                 bean1.getValue();
                 Assert.fail("Should not have been able to read value of @Removed bean");
             } catch(Exception expected) {
-                expected.printStackTrace();
             }
 
         } finally {
