@@ -132,6 +132,15 @@ public class EjbInEarTestCase {
             bean1.setValue(300);
             Assert.assertEquals(300, bean1.getValue());
             Assert.assertEquals(200, bean2.getValue());
+
+            bean1.clear();
+            try {
+                bean1.getValue();
+                Assert.fail("Should not have been able to read value of @Removed bean");
+            } catch(Exception expected) {
+                expected.printStackTrace();
+            }
+
         } finally {
             client.remove();
         }

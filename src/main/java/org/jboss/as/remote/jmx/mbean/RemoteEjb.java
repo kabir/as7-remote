@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ejb.Remove;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -71,19 +72,6 @@ public class RemoteEjb implements RemoteEjbMBean {
             throw new IllegalStateException("No proxy found for: " + name);
         }
 
-        return invokeMethod(value, returnType, methodName, sig, args);
-    }
-
-    @Override
-    public Object invokeStateful(String name, String declaringClassName, String returnType, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
-        Object value = statefulBeanInstances.get(sessionId);
-        if (value == null) {
-            throw new IllegalStateException("No proxy found for: " + name);
-        }
-        return invokeMethod(value, returnType, methodName, sig, args);
-    }
-
-    private Object invokeMethod(Object value, String returnType, String methodName, String[] sig, Object[] args) throws Exception {
         Method m;
         try {
             m = MethodUtil.getMethod(index, value.getClass(), returnType, methodName, sig);
@@ -92,6 +80,26 @@ public class RemoteEjb implements RemoteEjbMBean {
         }
 
         return m.invoke(value, args);
+    }
+
+    @Override
+    public Object invokeStateful(String name, String declaringClassName, String returnType, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
+        Object value = statefulBeanInstances.get(sessionId);
+        if (value == null) {
+            throw new IllegalStateException("No proxy found for: " + name);
+        }
+        Method m;
+        try {
+            m = MethodUtil.getMethod(index, value.getClass(), returnType, methodName, sig);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
+        }
+
+        Object o = m.invoke(value, args);
+        if (m.isAnnotationPresent(Remove.class)) {
+            statefulBeanInstances.remove(sessionId);
+        }
+        return o;
     }
 
     @Override

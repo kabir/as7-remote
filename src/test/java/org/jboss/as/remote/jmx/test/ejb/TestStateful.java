@@ -22,6 +22,7 @@
 package org.jboss.as.remote.jmx.test.ejb;
 
 import javax.ejb.Local;
+import javax.ejb.Remove;
 
 /**
  *
@@ -32,4 +33,9 @@ import javax.ejb.Local;
 public interface TestStateful {
     int getValue();
     void setValue(int value);
+
+    //Since we don't know the bean class from the mbean, we need to put the @Remove
+    //annotation here as well as on the impl class
+    @Remove
+    void clear();
 }

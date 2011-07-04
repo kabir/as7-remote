@@ -21,6 +21,7 @@
 */
 package org.jboss.as.remote.jmx.test.ejb;
 
+import javax.ejb.Remove;
 import javax.ejb.Stateful;
 
 /**
@@ -41,6 +42,9 @@ public class TestStatefulBean implements TestStateful {
         this.value = value;
     }
 
+    @Remove
+    public void clear() {
+    }
 
 
 
