@@ -22,9 +22,8 @@
 package org.jboss.as.remote.jmx.client;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -42,8 +41,6 @@ public class Client {
 
     private static String[] LOOKUP_SIG = new String[] {String.class.getName(), String.class.getName()};
 
-    private Map<String, Object> proxies = new HashMap<String, Object>();
-
     private final ObjectName appMBeanName;
     private final String host;
     private final int port;
@@ -55,26 +52,25 @@ public class Client {
         this.port = port;
     }
 
-    public synchronized <T> T lookup(Class<T> clazz, String name) throws NamingException {
-        Object client = proxies.get(name);
-        if (client == null) {
-            client = createProxy(clazz, name);
-            proxies.put(name, client);
-        }
-        return clazz.cast(client);
-    }
-
-    private <T> T createProxy(Class<T> clazz, String name) throws NamingException {
-        Integer type = null;
+    public <T> T lookup(Class<T> clazz, String name) throws NamingException {
+        Object val = null;
         try {
-            type = (Integer)getConnection().invoke(appMBeanName, "lookup", new Object[] {clazz.getName(), name}, LOOKUP_SIG);
+            val = getConnection().invoke(appMBeanName, "lookup", new Object[] {clazz.getName(), name}, LOOKUP_SIG);
         } catch (Exception e) {
             if (e.getCause() instanceof NamingException) {
                 throw (NamingException)e.getCause();
             }
             throw new RuntimeException(e);
         }
-        StatelessBeanHandler handler = new StatelessBeanHandler(this, clazz, name);
+        InvocationHandler handler;
+        if (val instanceof StatelessBeanHandler) {
+            StatelessBeanHandler sbh = (StatelessBeanHandler)val;
+            sbh.setClient(this);
+            handler = sbh;
+        } else {
+            throw new RuntimeException("Unknown handler type " + val);
+        }
+
         return (T)Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {clazz}, handler);
     }
 

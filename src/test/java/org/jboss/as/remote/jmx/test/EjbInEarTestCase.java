@@ -94,7 +94,11 @@ public class EjbInEarTestCase {
         TestStateless bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
         Assert.assertNotNull(bean);
         Assert.assertEquals(1, bean.test(true));
+        Assert.assertEquals(0, bean.test(false));
 
-        System.out.println("Test");
+        bean = client.lookup(TestStateless.class, "java:global/test/test-ejb/TestStatelessBean");
+        Assert.assertNotNull(bean);
+        Assert.assertEquals(0, bean.test(false));
+        Assert.assertEquals(1, bean.test(true));
     }
 }

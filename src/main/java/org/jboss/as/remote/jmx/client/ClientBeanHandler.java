@@ -21,27 +21,36 @@
 */
 package org.jboss.as.remote.jmx.client;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
 
-import org.jboss.as.remote.jmx.common.MethodUtil;
-
-public class StatelessBeanHandler extends ClientBeanHandler {
+/**
+ *
+ * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
+ * @version $Revision: 1.1 $
+ */
+abstract class ClientBeanHandler implements InvocationHandler, Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String[].class.getName(), Object[].class.getName()};
+    private final String name;
+    private volatile Client client;
 
-    public StatelessBeanHandler(String name) {
-        super(name);
+    public ClientBeanHandler(String name) {
+        this.name = name;
     }
 
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        String methodName = method.getName();
-        String[] sig = MethodUtil.getSignature(method);
-        System.out.println("Method: " + methodName);
-        System.out.println("Sig: " + Arrays.toString(sig));
-
-        return getClient().getConnection().invoke(getClient().getAppMBeanName(), "invokeStateless", new Object[] {getName(), method.getName(), sig, args}, INVOKE_SIGNATURE);
+    Client getClient() {
+        return client;
     }
+
+    void setClient(Client client) {
+        this.client = client;
+    }
+
+    String getName() {
+        return name;
+    }
+
+
+
 
 }

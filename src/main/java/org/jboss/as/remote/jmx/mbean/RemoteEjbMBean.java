@@ -30,6 +30,6 @@ import javax.naming.NamingException;
  */
 public interface RemoteEjbMBean {
     void start();
-    Integer lookup(String className, String name) throws NamingException;
+    Object lookup(String className, String name) throws NamingException;
     Object invokeStateless(String name, String methodName, String[] sig, Object[] args) throws Exception;
 }

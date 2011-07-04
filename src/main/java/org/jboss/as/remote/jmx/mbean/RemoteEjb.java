@@ -31,6 +31,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.resource.spi.IllegalStateException;
 
+import org.jboss.as.remote.jmx.client.StatelessBeanHandler;
 import org.jboss.as.remote.jmx.common.MethodUtil;
 import org.jboss.logging.Logger;
 
@@ -45,15 +46,15 @@ public class RemoteEjb implements RemoteEjbMBean {
 
     Map<String, Object> statelessBeans = Collections.synchronizedMap(new HashMap<String, Object>());
 
-    public Integer lookup(String className, String name) throws NamingException {
+    public Object lookup(String className, String name) throws NamingException {
         return lookupStateless(className, name);
     }
 
-    private Integer lookupStateless(String className, String name) throws NamingException {
+    private Object lookupStateless(String className, String name) throws NamingException {
         System.out.println("Looking up bean");
         Object value = statelessBeans.get(name);
         if (value != null) {
-            return 0;
+            return new StatelessBeanHandler(name);
         }
         InitialContext context = new InitialContext();
         value = context.lookup(name);
@@ -75,7 +76,7 @@ public class RemoteEjb implements RemoteEjbMBean {
             throw new NamingException("Expected " + className + " for " + name);
         }
         statelessBeans.put(name, value);
-        return -1;
+        return new StatelessBeanHandler(name);
     }
 
     @Override
