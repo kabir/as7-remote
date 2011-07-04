@@ -46,6 +46,8 @@ public class RemoteEjb implements RemoteEjbMBean {
 
     private final Logger log = Logger.getLogger(RemoteEjb.class);
 
+    private final DeploymentReflectionIndex index = DeploymentReflectionIndex.create();
+
     private final Map<String, Object> statelessBeans = Collections.synchronizedMap(new HashMap<String, Object>());
     private final Map<Long, Object> statefulBeanInstances = Collections.synchronizedMap(new HashMap<Long, Object>());
 
@@ -63,29 +65,29 @@ public class RemoteEjb implements RemoteEjbMBean {
     }
 
     @Override
-    public Object invokeStateless(String name, String declaringClassName, String methodName, String[] sig, Object[] args) throws Exception {
+    public Object invokeStateless(String name, String declaringClassName, String returnType, String methodName, String[] sig, Object[] args) throws Exception {
         System.out.println("Invoking on bean");
         Object value = statelessBeans.get(name);
         if (value == null) {
             throw new IllegalStateException("No proxy found for: " + name);
         }
 
-        Method m;
-        try {
-            m = MethodUtil.getMethod(value.getClass(), methodName, sig);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
-        }
-
-        return m.invoke(value, args);
+        return invokeMethod(value, returnType, methodName, sig, args);
     }
 
     @Override
-    public Object invokeStateful(String name, String declaringClassName, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
+    public Object invokeStateful(String name, String declaringClassName, String returnType, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
         Object value = statefulBeanInstances.get(sessionId);
+        if (value == null) {
+            throw new IllegalStateException("No proxy found for: " + name);
+        }
+        return invokeMethod(value, returnType, methodName, sig, args);
+    }
+
+    private Object invokeMethod(Object value, String returnType, String methodName, String[] sig, Object[] args) throws Exception {
         Method m;
         try {
-            m = MethodUtil.getMethod(value.getClass(), methodName, sig);
+            m = MethodUtil.getMethod(index, value.getClass(), returnType, methodName, sig);
         } catch (Exception e) {
             throw new RuntimeException("Could not find method called " + methodName + " with signature " + Arrays.toString(sig));
         }
@@ -96,6 +98,11 @@ public class RemoteEjb implements RemoteEjbMBean {
     @Override
     public void start() {
         log.info("Starting remote ejb invocation mbean");
+    }
+
+    public void stop() {
+        statefulBeanInstances.clear();
+        statelessBeans.clear();
     }
 
     @Override

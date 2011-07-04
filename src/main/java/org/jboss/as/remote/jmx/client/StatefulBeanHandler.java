@@ -27,7 +27,7 @@ import org.jboss.as.remote.jmx.common.MethodUtil;
 
 public class StatefulBeanHandler extends ClientBeanHandler {
     private static final long serialVersionUID = 1L;
-    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String.class.getName(), Long.TYPE.getName(), String[].class.getName(), Object[].class.getName()};
+    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String.class.getName(), String.class.getName(), Long.TYPE.getName(), String[].class.getName(), Object[].class.getName()};
 
     private final long sessionId;
 
@@ -39,7 +39,7 @@ public class StatefulBeanHandler extends ClientBeanHandler {
     @Override
     Object doInvoke(Object proxy, Client client, String name, Method method, Object[] args) throws Throwable {
         String[] sig = MethodUtil.getSignature(method);
-        return client.getConnection().invoke(client.getAppMBeanName(), "invokeStateful", new Object[] {name, method.getDeclaringClass().getName(), method.getName(), sessionId, sig, args}, INVOKE_SIGNATURE);
+        return client.getConnection().invoke(client.getAppMBeanName(), "invokeStateful", new Object[] {name, method.getDeclaringClass().getName(),method.getReturnType().getName(),  method.getName(), sessionId, sig, args}, INVOKE_SIGNATURE);
     }
 
 }

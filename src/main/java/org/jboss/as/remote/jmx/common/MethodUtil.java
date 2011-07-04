@@ -27,6 +27,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.as.remote.jmx.mbean.ClassReflectionIndex;
+import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
+
 /**
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
@@ -57,10 +60,12 @@ public class MethodUtil {
         return sig;
     }
 
-    public static Method getMethod(Class<?> clazz, String name, String[] sig)  throws ClassNotFoundException, NoSuchMethodException {
+    public static Method getMethod(DeploymentReflectionIndex index, Class<?> clazz, String returnType, String name, String[] sig)  throws ClassNotFoundException, NoSuchMethodException {
         System.out.println(Arrays.toString(sig));
 
-        return clazz.getMethod(name, getArgs(clazz, sig));
+        ClassReflectionIndex<?> classIndex = index.getClassIndex(clazz);
+        return classIndex.getMethod(returnType, name, sig);
+        //return clazz.getMethod(name, getArgs(clazz, sig));
     }
 
     private static Class<?>[] getArgs(Class<?> clazz, String[] sig) throws ClassNotFoundException {

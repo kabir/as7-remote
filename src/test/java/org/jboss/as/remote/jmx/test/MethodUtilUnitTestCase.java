@@ -26,6 +26,7 @@ import java.lang.reflect.Method;
 import junit.framework.Assert;
 
 import org.jboss.as.remote.jmx.common.MethodUtil;
+import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
 import org.junit.Test;
 
 /**
@@ -34,6 +35,8 @@ import org.junit.Test;
  * @version $Revision: 1.1 $
  */
 public class MethodUtilUnitTestCase {
+
+    DeploymentReflectionIndex index = DeploymentReflectionIndex.create();
 
     @Test
     public void testNoArgsMethod() throws Exception {
@@ -101,7 +104,8 @@ public class MethodUtilUnitTestCase {
         }
         Assert.assertNotNull(original);
         String[] sig = MethodUtil.getSignature(original);
-        Method found = MethodUtil.getMethod(this.getClass(), name, sig);
+        Method found = MethodUtil.getMethod(index, this.getClass(), Void.TYPE.getName(), name, sig);
+        //Method found = MethodUtil.getMethod(this.getClass(), name, sig);
         Assert.assertEquals(original, found);
     }
 }

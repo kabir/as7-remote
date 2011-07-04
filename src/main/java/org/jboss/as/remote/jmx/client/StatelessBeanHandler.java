@@ -27,7 +27,7 @@ import org.jboss.as.remote.jmx.common.MethodUtil;
 
 public class StatelessBeanHandler extends ClientBeanHandler {
     private static final long serialVersionUID = 1L;
-    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String.class.getName(), String[].class.getName(), Object[].class.getName()};
+    private static final String[] INVOKE_SIGNATURE = new String[] {String.class.getName(), String.class.getName(), String.class.getName(), String.class.getName(), String[].class.getName(), Object[].class.getName()};
 
     public StatelessBeanHandler(String name) {
         super(name);
@@ -36,7 +36,7 @@ public class StatelessBeanHandler extends ClientBeanHandler {
     @Override
     Object doInvoke(Object proxy, Client client, String name, Method method, Object[] args) throws Throwable {
         String[] sig = MethodUtil.getSignature(method);
-        return client.getConnection().invoke(client.getAppMBeanName(), "invokeStateless", new Object[] {name, method.getDeclaringClass().getName(), method.getName(), sig, args}, INVOKE_SIGNATURE);
+        return client.getConnection().invoke(client.getAppMBeanName(), "invokeStateless", new Object[] {name, method.getDeclaringClass().getName(), method.getReturnType().getName(), method.getName(), sig, args}, INVOKE_SIGNATURE);
     }
 
 }
