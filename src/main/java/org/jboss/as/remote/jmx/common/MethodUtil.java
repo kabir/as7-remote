@@ -22,7 +22,6 @@
 package org.jboss.as.remote.jmx.common;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,30 +60,7 @@ public class MethodUtil {
     }
 
     public static Method getMethod(DeploymentReflectionIndex index, Class<?> clazz, String returnType, String name, String[] sig)  throws ClassNotFoundException, NoSuchMethodException {
-        System.out.println(Arrays.toString(sig));
-
         ClassReflectionIndex<?> classIndex = index.getClassIndex(clazz);
         return classIndex.getMethod(returnType, name, sig);
-        //return clazz.getMethod(name, getArgs(clazz, sig));
-    }
-
-    private static Class<?>[] getArgs(Class<?> clazz, String[] sig) throws ClassNotFoundException {
-        Class<?>[] args = new Class[sig.length];
-        for (int i = 0 ; i < args.length ; i++) {
-            args[i] = getClass(clazz, sig[i]);
-        }
-        return args;
-    }
-
-    private static Class<?> getClass(Class<?> clazz, String sig) throws ClassNotFoundException {
-        if (sig.startsWith("[")) {
-            return Class.forName(sig, true, clazz.getClassLoader());
-        } else {
-            Class<?> found = PRIMITIVES.get(sig);
-            if (found != null) {
-                return found;
-            }
-            return clazz.getClassLoader().loadClass(sig);
-        }
     }
 }

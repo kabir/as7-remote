@@ -66,7 +66,6 @@ public class RemoteEjb implements RemoteEjbMBean {
 
     @Override
     public Object invokeStateless(String name, String declaringClassName, String returnType, String methodName, String[] sig, Object[] args) throws Exception {
-        System.out.println("Invoking on bean");
         Object value = statelessBeans.get(name);
         if (value == null) {
             throw new IllegalStateException("No proxy found for: " + name);
@@ -138,12 +137,6 @@ public class RemoteEjb implements RemoteEjbMBean {
             ex.setRootCause(e);
             throw ex;
         }
-        System.out.println(clazz);
-        System.out.println(value.getClass());
-
-        System.out.println(value.getClass().isAssignableFrom(clazz));
-        System.out.println(clazz.isAssignableFrom(value.getClass()));
-
         if (!clazz.isAssignableFrom(value.getClass())) {
             throw new NamingException("Expected " + className + " for " + name);
         }
@@ -162,12 +155,6 @@ public class RemoteEjb implements RemoteEjbMBean {
             ex.setRootCause(e);
             throw ex;
         }
-        System.out.println(clazz);
-        System.out.println(value.getClass());
-
-        System.out.println(value.getClass().isAssignableFrom(clazz));
-        System.out.println(clazz.isAssignableFrom(value.getClass()));
-
         if (!clazz.isAssignableFrom(value.getClass())) {
             throw new NamingException("Expected " + className + " for " + name);
         }
