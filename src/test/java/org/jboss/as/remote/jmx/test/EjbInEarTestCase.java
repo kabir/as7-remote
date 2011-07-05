@@ -23,7 +23,21 @@ package org.jboss.as.remote.jmx.test;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.Queue;
+import javax.jms.QueueConnection;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueReceiver;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
+import javax.jms.TextMessage;
 import javax.management.ObjectName;
 
 import junit.framework.Assert;
@@ -49,6 +63,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * For the jms parts of this test to work AS 7.0.0.CR1 must be started up with JMS enabled: <br/>
+ * {@code ./build/target/jboss-7.0.0.CR2-SNAPSHOT/bin/standalone.sh --server-config=standalone-preview.xml}
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.1 $
@@ -57,6 +73,9 @@ import org.junit.runner.RunWith;
 @RunAsClient
 public class EjbInEarTestCase {
 
+    /**
+     * This creates an EAR file containing an EJB jar, and a sar which contains our MBean allowing access to the server
+     */
     @Deployment
     public static Archive<?> createEar() throws Exception {
         //EJB jar
@@ -77,6 +96,8 @@ public class EjbInEarTestCase {
         File metaInfDir = new File(file, "META-INF");
         ArchivePath metaInf = ArchivePaths.create(ArchivePaths.create("/"), "META-INF");
         sar.add(new FileAsset(new File(metaInfDir, "jboss-service.xml")), ArchivePaths.create(metaInf, "jboss-service.xml"));
+        //We need to add the extra module dependencies for the looukup of RemoteConnectionFactory
+        sar.add(new FileAsset(new File(metaInfDir, "MANIFEST.MF")), ArchivePaths.create(metaInf, "MANIFEST.MF"));
 
         //Ear
         EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, "test.ear");
@@ -143,5 +164,67 @@ public class EjbInEarTestCase {
         } finally {
             client.remove();
         }
+    }
+
+    @Test
+    public void testJmsLookup() throws Exception {
+        Client client = ClientFactory.INSTANCE.getOrCreateClient(new ObjectName("jboss:name=test,type=remote"), "localhost", 1090);
+        QueueConnection conn = null;
+        QueueSession session = null;
+        try {
+            QueueConnectionFactory qcf = client.lookup(QueueConnectionFactory.class, "RemoteConnectionFactory");
+            Queue queue = client.lookup(Queue.class, "queue/test");
+            conn = qcf.createQueueConnection();
+            conn.start();
+            session = conn.createQueueSession(false, QueueSession.AUTO_ACKNOWLEDGE);
+
+            final CountDownLatch latch = new CountDownLatch(10);
+            final List<String> result = new ArrayList<String>();
+
+            // Set the async listener
+            QueueReceiver recv = session.createReceiver(queue);
+            recv.setMessageListener(new MessageListener() {
+
+                @Override
+                public void onMessage(Message message) {
+                    TextMessage msg = (TextMessage)message;
+                    try {
+                        result.add(msg.getText());
+                        latch.countDown();
+                    } catch (JMSException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            QueueSender sender = session.createSender(queue);
+            for (int i = 0 ; i < 10 ; i++) {
+                String s = "Test" + i;
+                TextMessage msg = session.createTextMessage(s);
+                sender.send(msg);
+            }
+
+            Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
+            Assert.assertEquals(10, result.size());
+            for (int i = 0 ; i < result.size() ; i++) {
+                Assert.assertEquals("Test" + i, result.get(i));
+            }
+
+        } finally {
+            try {
+                conn.stop();
+            } catch (Exception ignore) {
+            }
+            try {
+                session.close();
+            } catch (Exception ignore) {
+            }
+            try {
+                conn.close();
+            } catch (Exception ignore) {
+            }
+            client.remove();
+        }
+
     }
 }

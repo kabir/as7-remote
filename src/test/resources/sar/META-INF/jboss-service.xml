@@ -28,5 +28,8 @@
       <attribute name="statelessBeanNames">java:global/test/test-ejb/TestStatelessBean</attribute>
       <!--  A comma separated list of jndi names of stateful session beans -->
       <attribute name="statefulBeanNames">java:global/test/test-ejb/TestStatefulBean</attribute>
+      <!--  A comma separated list of jndi names of things that do not need extra proxying -->
+      <attribute name="rawNames">RemoteConnectionFactory,queue/test</attribute>
+      
     </mbean>
 </server>
