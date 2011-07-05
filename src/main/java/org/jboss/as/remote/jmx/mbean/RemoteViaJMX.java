@@ -35,6 +35,7 @@ import javax.naming.NamingException;
 
 import org.jboss.as.remote.jmx.client.StatefulBeanHandler;
 import org.jboss.as.remote.jmx.client.StatelessBeanHandler;
+import org.jboss.as.remote.jmx.common.DeploymentReflectionIndex;
 import org.jboss.as.remote.jmx.common.MethodUtil;
 import org.jboss.logging.Logger;
 
@@ -43,9 +44,9 @@ import org.jboss.logging.Logger;
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.1 $
  */
-public class RemoteEjb implements RemoteEjbMBean {
+public class RemoteViaJMX implements RemoteViaJMXMBean {
 
-    private final Logger log = Logger.getLogger(RemoteEjb.class);
+    private final Logger log = Logger.getLogger(RemoteViaJMX.class);
 
     private final DeploymentReflectionIndex index = DeploymentReflectionIndex.create();
 
@@ -54,6 +55,7 @@ public class RemoteEjb implements RemoteEjbMBean {
 
     private final Set<String> statelessBeanNames = Collections.synchronizedSet(new HashSet<String>());
     private final Set<String> statefulBeanNames = Collections.synchronizedSet(new HashSet<String>());
+    private final Set<String> rawNames = Collections.synchronizedSet(new HashSet<String>());
 
     public Object lookup(String className, String name) throws NamingException {
         if (statelessBeanNames.contains(name)) {
@@ -62,7 +64,10 @@ public class RemoteEjb implements RemoteEjbMBean {
         if (statefulBeanNames.contains(name)) {
             return lookupStateful(className, name);
         }
-        throw new IllegalArgumentException("No registered stateful or stateless beans called '" + name + "'");
+        if (rawNames.contains(name)) {
+            return lookupRaw(className, name);
+        }
+        throw new IllegalArgumentException("No stateful or stateless beans, or raw names are registered for '" + name + "'");
     }
 
     @Override
@@ -122,6 +127,11 @@ public class RemoteEjb implements RemoteEjbMBean {
         parseNames(statefulBeanNames, names);
     }
 
+    @Override
+    public void setRawNames(String names) {
+        parseNames(rawNames, names);
+    }
+
     private void parseNames(Set<String> set, String value){
         if (value != null && value.trim().length() > 0) {
             for (String s : value.split(",")) {
@@ -137,17 +147,10 @@ public class RemoteEjb implements RemoteEjbMBean {
         }
         InitialContext context = new InitialContext();
         value = context.lookup(name);
-        Class<?> clazz;
-        try {
-            clazz = Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            NamingException ex = new NamingException("Could not find class for " + className + " in loader: "  + e.getMessage());
-            ex.setRootCause(e);
-            throw ex;
+        if (className == null) {
+            throw new NamingException("No class specified for " + name);
         }
-        if (!clazz.isAssignableFrom(value.getClass())) {
-            throw new NamingException("Expected " + className + " for " + name);
-        }
+        checkClass(className, name, value);
         statelessBeans.put(name, value);
         return new StatelessBeanHandler(name);
     }
@@ -155,6 +158,23 @@ public class RemoteEjb implements RemoteEjbMBean {
     private Object lookupStateful(String className, String name) throws NamingException {
         InitialContext context = new InitialContext();
         Object value = context.lookup(name);
+        if (className == null) {
+            throw new NamingException("No class specified for " + name);
+        }
+        checkClass(className, name, value);
+        return createStatefulHandler(name, value);
+    }
+
+    private Object lookupRaw(String className, String name) throws NamingException {
+        InitialContext context = new InitialContext();
+        Object value = context.lookup(name);
+        if (className != null) {
+            checkClass(className, name, value);
+        }
+        return value;
+    }
+
+    private Class<?> checkClass(String className, String name, Object value) throws NamingException {
         Class<?> clazz;
         try {
             clazz = Class.forName(className);
@@ -166,7 +186,7 @@ public class RemoteEjb implements RemoteEjbMBean {
         if (!clazz.isAssignableFrom(value.getClass())) {
             throw new NamingException("Expected " + className + " for " + name);
         }
-        return createStatefulHandler(name, value);
+        return clazz;
     }
 
     private synchronized StatefulBeanHandler createStatefulHandler(String name, Object stateful) {

@@ -26,7 +26,11 @@ import java.util.Map;
 
 import javax.management.ObjectName;
 
+import org.jboss.as.remote.jmx.mbean.RemoteViaJMX;
+
 /**
+ * Factory to create clients to look up things in JNDI and invoke upon EJBs via JMX.
+ * For this to work your application must deploy the {@link RemoteViaJMX} MBean.
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.1 $
@@ -37,10 +41,28 @@ public class ClientFactory {
 
     Map<ObjectName, Client> clients = new HashMap<ObjectName, Client>();
 
+    /**
+     * Gets a client via the object name of the registered {@link RemoteViaJMX} MBean.
+     * This client can be reused until it is no longer needed, as long as the MBean is deployed
+     *
+     * @param appName the object name of the {@link RemoteViaJMX} MBean the client is communicating with
+     * @return a client that can be used to lookup things in JNDI and invoke upon EJBs or null if it does not exist.
+     */
     public synchronized Client getClient(ObjectName appName) {
         return clients.get(appName);
     }
 
+    /**
+     * Gets a client via the object name of the registered {@link RemoteViaJMX} MBean.
+     * This client can be reused until it is no longer needed, as long as the MBean is deployed.
+     * If the client does not already exist it will be created
+     *
+     *
+     * @param appName the object name of the {@link RemoteViaJMX} MBean the client is communicating with
+     * @param host the host name of the application server. If {@code null} it defaults to {@code localhost}
+     * @param port the port of the jmx connector on the application server. If {@code <=0} it defaults to {@code 1090}
+     * @return a client that can be used to lookup things in JNDI and invoke upon EJBs
+     */
     public synchronized Client getOrCreateClient(ObjectName appName, String host, int port) {
         Client client = clients.get(appName);
         if (client == null) {
@@ -50,6 +72,11 @@ public class ClientFactory {
         return client;
     }
 
+    /**
+     * Closes a client instance
+     *
+     * @param the object name of the {@link RemoteViaJMX} MBean the client is communicating with
+     */
     synchronized void closeClient(ObjectName appName) {
         Client client = clients.remove(appName);
         if (client != null) {

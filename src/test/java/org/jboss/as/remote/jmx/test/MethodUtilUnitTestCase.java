@@ -25,8 +25,8 @@ import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
+import org.jboss.as.remote.jmx.common.DeploymentReflectionIndex;
 import org.jboss.as.remote.jmx.common.MethodUtil;
-import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
 import org.junit.Test;
 
 /**

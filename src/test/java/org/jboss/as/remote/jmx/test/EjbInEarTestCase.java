@@ -34,7 +34,7 @@ import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.as.remote.jmx.client.Client;
 import org.jboss.as.remote.jmx.client.ClientFactory;
 import org.jboss.as.remote.jmx.common.MethodUtil;
-import org.jboss.as.remote.jmx.mbean.RemoteEjb;
+import org.jboss.as.remote.jmx.mbean.RemoteViaJMX;
 import org.jboss.as.remote.jmx.test.ejb.TestStateful;
 import org.jboss.as.remote.jmx.test.ejb.TestStateless;
 import org.jboss.as.remote.jmx.test.ejb.TestStatelessBean;
@@ -67,7 +67,7 @@ public class EjbInEarTestCase {
         JavaArchive sar = ShrinkWrap.create(JavaArchive.class, "test.sar");
         sar.addPackage(Client.class.getPackage());
         sar.addPackage(MethodUtil.class.getPackage());
-        sar.addPackage(RemoteEjb.class.getPackage());
+        sar.addPackage(RemoteViaJMX.class.getPackage());
 
         URL url = EjbInEarTestCase.class.getClassLoader().getResource("sar");
         File file = new File(url.toURI());

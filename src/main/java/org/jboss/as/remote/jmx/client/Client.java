@@ -31,14 +31,20 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.naming.NamingException;
 
+import org.jboss.as.remote.jmx.mbean.RemoteViaJMX;
+
 /**
+ * A client that is connected to a {@link RemoteViaJMX} MBean instance on the server.
+ * {@link #lookup(Class, String)} calles are forwarded to that MBean which does lookups on our behalf
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.1 $
  */
 public class Client {
 
-    private static String[] LOOKUP_SIG = new String[] {String.class.getName(), String.class.getName()};
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 1090;
+    private static final String[] LOOKUP_SIG = new String[] {String.class.getName(), String.class.getName()};
 
     private final ClientFactory factory;
     private final ObjectName appMBeanName;
@@ -49,14 +55,22 @@ public class Client {
     Client(ClientFactory factory, ObjectName appMBeanName, String host, int port) {
         this.factory = factory;
         this.appMBeanName = appMBeanName;
-        this.host = host;
-        this.port = port;
+        this.host = host == null ? DEFAULT_HOST : host;
+        this.port = port <= 0 ? DEFAULT_PORT : port;
     }
 
+    /**
+     * Looks up in JNDI on the server.
+     * If it is an EJB a proxy for the EJB interface is returned which does calls on our behalf
+     *
+     * @param clazz the expected type to return.
+     * @param name the name we are looking up
+     */
     public <T> T lookup(Class<T> clazz, String name) throws NamingException {
-        Object val = null;
+        Object val;
         try {
-            val = getConnection().invoke(appMBeanName, "lookup", new Object[] {clazz.getName(), name}, LOOKUP_SIG);
+            String className = clazz.getName();
+            val = getConnection().invoke(appMBeanName, "lookup", new Object[] {className, name}, LOOKUP_SIG);
         } catch (Exception e) {
             if (e.getCause() != null) {
                 if (e.getCause() instanceof NamingException) {
@@ -74,12 +88,15 @@ public class Client {
         } else if (val instanceof StatefulBeanHandler) {
             handler = (ClientBeanHandler)val;
         } else {
-            throw new RuntimeException("Unknown handler type " + val);
+            return clazz.cast(val);
         }
         handler.setClient(this);
         return (T)Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {clazz}, handler);
     }
 
+    /**
+     * Once done with this client instance, removes it
+     */
     public void remove() {
         factory.closeClient(appMBeanName);
     }

@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.jboss.as.remote.jmx.mbean;
+package org.jboss.as.remote.jmx.common;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -43,7 +43,7 @@ import java.util.Map;
  * @param <T> the type being indexed
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public final class ClassReflectionIndex<T> {
+final class ClassReflectionIndex<T> {
     private final Class<T> indexedClass;
     private final Map<String, Field> fields;
     private final Map<ParamList, Constructor<T>> constructors;

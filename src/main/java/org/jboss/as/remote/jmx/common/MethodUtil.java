@@ -23,8 +23,6 @@ package org.jboss.as.remote.jmx.common;
 
 import java.lang.reflect.Method;
 
-import org.jboss.as.remote.jmx.mbean.ClassReflectionIndex;
-import org.jboss.as.remote.jmx.mbean.DeploymentReflectionIndex;
 
 /**
  *

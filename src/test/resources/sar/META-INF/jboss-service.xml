@@ -23,7 +23,7 @@
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="urn:jboss:service:7.0 jboss-service_7_0.xsd">
 
-    <mbean name="jboss:name=test,type=remote" code="org.jboss.as.remote.jmx.mbean.RemoteEjb">
+    <mbean name="jboss:name=test,type=remote" code="org.jboss.as.remote.jmx.mbean.RemoteViaJMX">
       <!--  A comma separated list of jndi names of stateless session beans -->
       <attribute name="statelessBeanNames">java:global/test/test-ejb/TestStatelessBean</attribute>
       <!--  A comma separated list of jndi names of stateful session beans -->

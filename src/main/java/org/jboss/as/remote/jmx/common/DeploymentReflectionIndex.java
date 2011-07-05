@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.jboss.as.remote.jmx.mbean;
+package org.jboss.as.remote.jmx.common;
 
 import java.security.Permission;
 import java.util.HashMap;

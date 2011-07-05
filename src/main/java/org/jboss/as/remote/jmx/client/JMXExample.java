@@ -19,20 +19,32 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.as.remote.jmx.mbean;
+package org.jboss.as.remote.jmx.client;
 
-import javax.naming.NamingException;
+import javax.management.MBeanServerConnection;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
 
 /**
  *
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  * @version $Revision: 1.1 $
  */
-public interface RemoteEjbMBean {
-    void start();
-    void setStatelessBeanNames(String name);
-    void setStatefulBeanNames(String name);
-    Object lookup(String className, String name) throws NamingException;
-    Object invokeStateless(String name, String declaringClassName, String returnType, String methodName, String[] sig, Object[] args) throws Exception;
-    Object invokeStateful(String name, String declaringClassName, String returnType, String methodName, long sessionId, String[] sig, Object[] args) throws Exception;
+public class JMXExample {
+
+    public static void main(String[] args) throws Exception {
+        //Get a connection to the JBoss AS MBean server on localhost
+        String host = "localhost";
+        int port = 1090;
+        String urlString = System.getProperty("jmx.service.url",
+                "service:jmx:rmi:///jndi/rmi://" + host + ":" + port + "/jmxrmi");
+        JMXServiceURL serviceURL = new JMXServiceURL(urlString);
+        JMXConnector jmxConnector = JMXConnectorFactory.connect(serviceURL, null);
+        MBeanServerConnection connection = jmxConnector.getMBeanServerConnection();
+
+        //Invoke on the JBoss AS MBean server
+        int count = connection.getMBeanCount();
+        System.out.println(count);
+    }
 }
