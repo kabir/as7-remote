@@ -31,7 +31,6 @@ import javax.ejb.Stateless;
 @Stateless
 public class TestStatelessBean implements TestStateless {
 
-    @Override
     public int test(boolean b) {
         return b ? 1 : 0;
     }

@@ -70,7 +70,6 @@ public class RemoteViaJMX implements RemoteViaJMXMBean {
         throw new IllegalArgumentException("No stateful or stateless beans, or raw names are registered for '" + name + "'");
     }
 
-    @Override
     public Object invokeStateless(String name, String declaringClassName, String returnType, String methodName, String[] sig, Object[] args) throws Exception {
         Object value = statelessBeans.get(name);
         if (value == null) {
@@ -87,7 +86,6 @@ public class RemoteViaJMX implements RemoteViaJMXMBean {
         return m.invoke(value, args);
     }
 
-    @Override
     public Object invokeStateful(String name, String declaringClassName, String returnType, String methodName, long sessionId, String[] sig, Object[] args) throws Exception {
         Object value = statefulBeanInstances.get(sessionId);
         if (value == null) {
@@ -107,7 +105,6 @@ public class RemoteViaJMX implements RemoteViaJMXMBean {
         return o;
     }
 
-    @Override
     public void start() {
         log.info("Starting remote ejb invocation mbean");
     }
@@ -117,17 +114,14 @@ public class RemoteViaJMX implements RemoteViaJMXMBean {
         statelessBeans.clear();
     }
 
-    @Override
     public void setStatelessBeanNames(String names) {
         parseNames(statelessBeanNames, names);
     }
 
-    @Override
     public void setStatefulBeanNames(String names) {
         parseNames(statefulBeanNames, names);
     }
 
-    @Override
     public void setRawNames(String names) {
         parseNames(rawNames, names);
     }

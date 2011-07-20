@@ -185,7 +185,6 @@ public class EjbInEarTestCase {
             QueueReceiver recv = session.createReceiver(queue);
             recv.setMessageListener(new MessageListener() {
 
-                @Override
                 public void onMessage(Message message) {
                     TextMessage msg = (TextMessage)message;
                     try {

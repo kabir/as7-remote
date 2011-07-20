@@ -43,7 +43,6 @@ abstract class ClientBeanHandler implements InvocationHandler, Serializable {
         this.client = client;
     }
 
-    @Override
     public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         return doInvoke(proxy, client, name, method, args);
     }
